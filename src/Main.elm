@@ -88,13 +88,13 @@ route : Parser (Route -> a) a
 route =
     P.oneOf
         [ P.map Home P.top
-        , P.map SignIn (P.s "signin")
+        , P.map SignIn (P.s "signin" </> P.fragment identity)
         ]
 
 
 type Route
     = Home
-    | SignIn
+    | SignIn (Maybe String)
     | NotFound
 
 
@@ -117,10 +117,13 @@ view { url } =
                 ]
             }
 
-        SignIn ->
+        SignIn fragment ->
             { title = "サインイン"
             , body =
-                [ text "サインイン中"
+                [ div []
+                    [ p [] [ text "サインイン中..." ]
+                    , p [] [ text <| Maybe.withDefault "" fragment ]
+                    ]
                 ]
             }
 
