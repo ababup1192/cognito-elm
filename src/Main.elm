@@ -87,11 +87,14 @@ type alias Query =
 route : Parser (Route -> a) a
 route =
     P.oneOf
-        [ P.map Home P.top ]
+        [ P.map Home P.top
+        , P.map SignIn (P.s "signin")
+        ]
 
 
 type Route
     = Home
+    | SignIn
     | NotFound
 
 
@@ -111,6 +114,13 @@ view { url } =
                     , href "https://zoma-test.auth.ap-northeast-1.amazoncognito.com/login?response_type=token&client_id=3ki2rs0t3rfo4m940q2uc3oscm&redirect_uri=https://localhost:3001/"
                     ]
                     [ text "ログイン" ]
+                ]
+            }
+
+        SignIn ->
+            { title = "サインイン"
+            , body =
+                [ text "サインイン中"
                 ]
             }
 
