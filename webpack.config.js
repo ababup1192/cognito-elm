@@ -28,7 +28,7 @@ var common = {
             template: "src/index.html",
             // inject details of output file at end of body
             inject: "body"
-        })
+        }),
     ],
     resolve: {
         modules: [path.join(__dirname, "src"), "node_modules"],
@@ -136,9 +136,8 @@ if (MODE === "production") {
             }),
             // Copy static assets
             new CopyWebpackPlugin([
-                {
-                    from: "src/assets"
-                }
+                { from: "src/assets" },
+                { from: "src/_redirects" },
             ]),
             new MiniCssExtractPlugin({
                 // Options similar to the same options in webpackOptions.output
