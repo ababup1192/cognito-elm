@@ -3,10 +3,13 @@ port module Main exposing (Model, Msg(..), init, main, update, view)
 import Browser
 import Browser.Navigation as Nav
 import Dict
-import FragmentParser as Fp
+import FragmentParser as FragmentParser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Http as Http
+import Json.Decode as D
+import Result exposing (Result)
 import Url
 import Url.Parser as P exposing ((</>), (<?>), Parser)
 import Url.Parser.Query as Q
@@ -35,21 +38,46 @@ main =
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
+    , userInfoMaybe : Maybe UserInfo
     }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model key url, Cmd.none )
+    ( Model key url Nothing, Cmd.none )
 
 
 
 -- UPDATE
 
 
+getUserInfo : String -> Cmd Msg
+getUserInfo accessToken =
+    Http.request
+        { method = "POST"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://zoma-test.auth.ap-northeast-1.amazoncognito.com/oauth2/userInfo"
+        , body = Http.emptyBody
+        , expect = Http.expectJson GotUserInfo userInfoDecoder
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+type alias UserInfo =
+    { userName : String }
+
+
+userInfoDecoder : D.Decoder UserInfo
+userInfoDecoder =
+    D.map UserInfo
+        (D.field "username" D.string)
+
+
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | GotUserInfo (Result Http.Error UserInfo)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -64,9 +92,28 @@ update msg model =
                     ( model, Nav.load href )
 
         UrlChanged url ->
-            ( { model | url = url }
-            , Cmd.none
-            )
+            case toRoute url of
+                SignIn fragmentMaybe ->
+                    let
+                        accessTokenMaybe =
+                            fragmentMaybe |> Maybe.andThen FragmentParser.run |> Maybe.andThen (Dict.get "access_token")
+                    in
+                    ( { model | url = url }
+                    , Maybe.withDefault Cmd.none (accessTokenMaybe |> Maybe.map getUserInfo)
+                    )
+
+                _ ->
+                    ( { model | url = url }
+                    , Cmd.none
+                    )
+
+        GotUserInfo userInfoResult ->
+            case userInfoResult of
+                Ok userInfo ->
+                    ( { model | userInfoMaybe = Just userInfo }, Cmd.none )
+
+                Err _ ->
+                    ( model, Cmd.none )
 
 
 
@@ -106,7 +153,7 @@ toRoute url =
 
 
 view : Model -> Browser.Document Msg
-view { url } =
+view { url, userInfoMaybe } =
     case toRoute url of
         Home ->
             { title = "ホーム"
@@ -120,14 +167,25 @@ view { url } =
             }
 
         SignIn fragmentMaybe ->
-            { title = "サインイン"
-            , body =
-                [ div []
-                    [ p [] [ text "サインイン中..." ]
-                    , p [] [ text <| Maybe.withDefault "" (Maybe.andThen Fp.run fragmentMaybe |> Maybe.andThen (Dict.get "access_token")) ]
-                    ]
-                ]
-            }
+            case userInfoMaybe of
+                Just { userName } ->
+                    { title = "サインイン"
+                    , body =
+                        [ div []
+                            [ p [] [ text "ユーザ名" ]
+                            , p [] [ text userName ]
+                            ]
+                        ]
+                    }
+
+                Nothing ->
+                    { title = "サインイン"
+                    , body =
+                        [ div []
+                            [ p [] [ text "サインイン中..." ]
+                            ]
+                        ]
+                    }
 
         NotFound ->
             { title = "NotFound"
