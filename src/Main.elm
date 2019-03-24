@@ -44,7 +44,18 @@ type alias Model =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model key url Nothing, Cmd.none )
+    case toRoute url of
+        SignIn fragmentMaybe ->
+            let
+                accessTokenMaybe =
+                    fragmentMaybe |> Maybe.andThen FragmentParser.run |> Maybe.andThen (Dict.get "access_token")
+            in
+            ( Model key url Nothing
+            , Maybe.withDefault Cmd.none (accessTokenMaybe |> Maybe.map getUserInfo)
+            )
+
+        _ ->
+            ( Model key url Nothing, Cmd.none )
 
 
 
@@ -92,20 +103,7 @@ update msg model =
                     ( model, Nav.load href )
 
         UrlChanged url ->
-            case toRoute url of
-                SignIn fragmentMaybe ->
-                    let
-                        accessTokenMaybe =
-                            fragmentMaybe |> Maybe.andThen FragmentParser.run |> Maybe.andThen (Dict.get "access_token")
-                    in
-                    ( { model | url = url }
-                    , Maybe.withDefault Cmd.none (accessTokenMaybe |> Maybe.map getUserInfo)
-                    )
-
-                _ ->
-                    ( { model | url = url }
-                    , Cmd.none
-                    )
+            ( { model | url = url }, Cmd.none )
 
         GotUserInfo userInfoResult ->
             case userInfoResult of
