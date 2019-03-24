@@ -2,6 +2,8 @@ port module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
 import Browser.Navigation as Nav
+import Dict
+import FragmentParser as Fp
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -117,12 +119,12 @@ view { url } =
                 ]
             }
 
-        SignIn fragment ->
+        SignIn fragmentMaybe ->
             { title = "サインイン"
             , body =
                 [ div []
                     [ p [] [ text "サインイン中..." ]
-                    , p [] [ text <| Maybe.withDefault "" fragment ]
+                    , p [] [ text <| Maybe.withDefault "" (Maybe.andThen Fp.run fragmentMaybe |> Maybe.andThen (Dict.get "access_token")) ]
                     ]
                 ]
             }
