@@ -111,7 +111,7 @@ view { url } =
             , body =
                 [ a
                     [ class "pure-button pure-button-active"
-                    , href "https://zoma-test.auth.ap-northeast-1.amazoncognito.com/login?response_type=token&client_id=3ki2rs0t3rfo4m940q2uc3oscm&redirect_uri=https://localhost:3001/"
+                    , href "https://zoma-test.auth.ap-northeast-1.amazoncognito.com/login?response_type=token&client_id=3ki2rs0t3rfo4m940q2uc3oscm&redirect_uri=https://elm-cognito.netlify.com/signin"
                     ]
                     [ text "ログイン" ]
                 ]
